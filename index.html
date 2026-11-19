@@ -1,17 +1,18 @@
 <!doctype html>
 <html lang="en">
-<head>
+
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#101827">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="./icons/afi-192.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icons/afi-192.svg">
   
+<head>  
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#101827"><link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="styles.css"><title>AFI – AI Forex Intelligence</title>
 </head>
-<body>
+
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -20,8 +21,8 @@ if ("serviceWorker" in navigator) {
       .catch(error => console.error("AFI service worker error:", error));
   });
 }
-  </script>
-  
+</script>
+<body>  
 <header><div class="brand"><div class="logo">AFI</div><div><h1>AI Forex Intelligence</h1><p>Market insight • Risk-first trading</p></div></div><span class="status">NOT CONNECTED</span></header>
 <main>
 <section class="hero"><p class="eyebrow">YOUR TRADING COMMAND CENTRE</p><h2>Trade with a plan.<br><span>Manage risk intelligently.</span></h2><p class="muted">Your AFI workspace is ready. Connect an MT5 trading engine later to enable live account data and automated execution.</p><div class="actions"><button id="analyze">Run sample analysis</button><button class="secondary" id="stop">Emergency stop</button></div></section>
