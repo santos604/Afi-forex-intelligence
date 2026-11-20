@@ -1,35 +1,313 @@
-<!doctype html>
-<html lang="en">
 
-<link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#101827">
-<meta name="mobile-web-app-capable" content="yes">
-<link rel="icon" href="./icons/afi-192.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="./icons/afi-192.svg">
-  
-<head>  
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#101827"><link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="styles.css"><title>AFI – AI Forex Intelligence</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>AFI - AI Forex Intelligence</title>
+
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="AFI AI Forex Intelligence trading dashboard">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/afi-192.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/afi-192.svg">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #0b1220;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+    }
+
+    header {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #263244;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      background: #7cdbb2;
+      color: #092018;
+      padding: 15px;
+      border-radius: 14px;
+      font-weight: bold;
+    }
+
+    h1 {
+      font-size: 19px;
+      margin: 0;
+    }
+
+    .status {
+      color: #f0bd66;
+      font-size: 11px;
+    }
+
+    main {
+      padding: 16px;
+      max-width: 750px;
+      margin: auto;
+    }
+
+    .card {
+      background: #111b2b;
+      border: 1px solid #263244;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg,#142c2b,#101827);
+      padding: 26px 20px;
+    }
+
+    .green {
+      color: #7cdbb2;
+    }
+
+    .muted {
+      color: #9baabd;
+      line-height: 1.6;
+    }
+
+    button {
+      background: #7cdbb2;
+      color: #092018;
+      border: none;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-weight: bold;
+      margin: 6px 3px 6px 0;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #273449;
+      color: white;
+    }
+
+    button.danger {
+      background: #8d3038;
+      color: white;
+    }
+
+    .market {
+      display: flex;
+      justify-content: space-between;
+      padding: 15px 0;
+      border-bottom: 1px solid #263244;
+    }
+
+    .value {
+      font-size: 22px;
+      font-weight: bold;
+      margin: 12px 0;
+    }
+
+    .tag {
+      background: #203d35;
+      color: #7cdbb2;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .levels {
+      display: grid;
+      grid-template-columns: repeat(3,1fr);
+      gap: 8px;
+    }
+
+    .level {
+      background: #1b293b;
+      border-radius: 12px;
+      padding: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .level small {
+      color: #9baabd;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    footer {
+      text-align: center;
+      color: #8290a4;
+      font-size: 12px;
+      padding: 25px 10px;
+    }
+  </style>
 </head>
 
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">AFI</div>
+    <div>
+      <h1>AI Forex Intelligence</h1>
+      <small class="muted">Market insight • Risk-first trading</small>
+    </div>
+  </div>
+  <span class="status">NOT CONNECTED</span>
+</header>
+
+<main>
+
+  <section class="card hero">
+    <p class="green">YOUR TRADING COMMAND CENTRE</p>
+
+    <h2>Trade with a plan.<br>
+      <span class="green">Manage risk intelligently.</span>
+    </h2>
+
+    <p class="muted">
+      Your AFI workspace is ready.
+      Connect an MT5 trading engine to enable
+      live market analysis and automated execution.
+    </p>
+
+    <button onclick="runAnalysis()">
+      Run AI Analysis
+    </button>
+
+    <button class="danger" onclick="emergencyStop()">
+      Emergency Stop
+    </button>
+  </section>
+
+  <section class="card">
+    <h3>ACCOUNT STATUS</h3>
+    <div class="value">Not Connected</div>
+    <span class="tag">MT5 CONNECTION PENDING</span>
+    <p class="muted">
+      No live account data or orders are connected.
+    </p>
+  </section>
+
+  <section class="card">
+    <h3>MARKET WATCHLIST</h3>
+    <p class="muted">Major forex pairs and gold</p>
+
+    <div id="markets">
+      <div class="market"><b>EURUSD</b><span>Awaiting live data</span></div>
+      <div class="market"><b>GBPUSD</b><span>Awaiting live data</span></div>
+      <div class="market"><b>USDJPY</b><span>Awaiting live data</span></div>
+      <div class="market"><b>USDCHF</b><span>Awaiting live data</span></div>
+      <div class="market"><b>AUDUSD</b><span>Awaiting live data</span></div>
+      <div class="market"><b>NZDUSD</b><span>Awaiting live data</span></div>
+      <div class="market"><b>USDCAD</b><span>Awaiting live data</span></div>
+      <div class="market"><b>XAUUSD</b><span>Awaiting live data</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>AI TRADE ANALYSIS</h3>
+
+    <div id="analysis">
+      <p class="muted">
+        Waiting for analysis.
+        Live market data is not connected.
+      </p>
+    </div>
+
+    <div class="levels">
+      <div class="level">
+        <small>STOP LOSS</small>
+        <b id="sl">--</b>
+      </div>
+
+      <div class="level">
+        <small>TAKE PROFIT</small>
+        <b id="tp">--</b>
+      </div>
+
+      <div class="level">
+        <small>RISK / REWARD</small>
+        <b id="rr">--</b>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>TRADING CONTROL CENTRE</h3>
+
+    <div class="market">
+      <span>Automatic trading</span>
+      <span class="tag">DISABLED</span>
+    </div>
+
+    <div class="market">
+      <span>AI strategies</span>
+      <span class="tag">PENDING</span>
+    </div>
+
+    <div class="market">
+      <span>Historical learning</span>
+      <span class="tag">PENDING</span>
+    </div>
+
+    <div class="market">
+      <span>MT5 integration</span>
+      <span class="tag">PENDING</span>
+    </div>
+  </section>
+
+  <footer>
+    AFI - AI Forex Intelligence<br>
+    Demo dashboard • No live trading connected
+  </footer>
+
+</main>
+
 <script>
+function runAnalysis() {
+  document.getElementById("analysis").innerHTML =
+    "<p class='green'>Sample analysis interface activated.</p>" +
+    "<p class='muted'>Live market data and AI engine are not connected. No real trading signal is being generated.</p>";
+
+  document.getElementById("sl").textContent = "--";
+  document.getElementById("tp").textContent = "--";
+  document.getElementById("rr").textContent = "--";
+}
+
+function emergencyStop() {
+  alert("AFI demo: No live trading engine is connected. No live orders were stopped.");
+}
+
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
+  window.addEventListener("load", function() {
     navigator.serviceWorker.register("./sw.js")
-      .then(() => console.log("AFI service worker ready"))
-      .catch(error => console.error("AFI service worker error:", error));
+      .then(function() {
+        console.log("AFI service worker registered");
+      })
+      .catch(function(error) {
+        console.error("Service worker error:", error);
+      });
   });
 }
 </script>
-<body>  
-<header><div class="brand"><div class="logo">AFI</div><div><h1>AI Forex Intelligence</h1><p>Market insight • Risk-first trading</p></div></div><span class="status">NOT CONNECTED</span></header>
-<main>
-<section class="hero"><p class="eyebrow">YOUR TRADING COMMAND CENTRE</p><h2>Trade with a plan.<br><span>Manage risk intelligently.</span></h2><p class="muted">Your AFI workspace is ready. Connect an MT5 trading engine later to enable live account data and automated execution.</p><div class="actions"><button id="analyze">Run sample analysis</button><button class="secondary" id="stop">Emergency stop</button></div></section>
-<section class="stats"><article><small>ACCOUNT</small><strong>Not connected</strong><p>MT5 connection pending</p></article><article><small>AUTO TRADING</small><strong class="off">OFF</strong><p>Execution disabled</p></article><article><small>RISK STATUS</small><strong>Protected</strong><p>No live orders can be placed</p></article></section>
-<section><div class="section-head"><div><p class="eyebrow">WATCHLIST</p><h2>Markets</h2></div><span class="muted">Analysis preview</span></div><div class="markets" id="markets"></div></section>
-<section class="panel"><p class="eyebrow">AI TRADE PLAN</p><h2 id="plan-title">Waiting for analysis</h2><p class="muted" id="plan-copy">Tap “Run sample analysis” to see an example plan. Sample values are illustrative, not live market signals.</p><div class="levels"><div><small>STOP LOSS</small><b>—</b></div><div><small>TAKE PROFIT</small><b>—</b></div><div><small>RISK / REWARD</small><b>—</b></div></div></section>
-<section class="panel"><p class="eyebrow">CONTROL ROOM</p><h2>Trading controls</h2><div class="control-row"><div><b>Automatic execution</b><p class="muted">Unavailable until secure MT5 connection</p></div><span class="pill">DISABLED</span></div><div class="control-row"><div><b>Strategy modes</b><p class="muted">Scalping · Day trading · Swing</p></div><span class="pill">PREVIEW</span></div><div class="control-row"><div><b>Learning & backtesting</b><p class="muted">Historical data engine not connected</p></div><span class="pill">PENDING</span></div></section>
-<footer>AFI prototype • Demo interface only • Not financial advice</footer>
-</main><script src="app.js"></script>
-</body></html>
+
+</body>
+    </html>
+  
