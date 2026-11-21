@@ -306,7 +306,6 @@ if ("serviceWorker" in navigator) {
       });
   });
 }
-</script>
 
 <script>
 const AFI_API = "https://afi-market-data.machariajohnwork.workers.dev/";
@@ -322,52 +321,77 @@ const AFI_PAIRS = [
   ["XAUUSD", "XAU/USD"]
 ];
 
+let afiRefreshTimer = null;
+
 async function afiRefreshPrices() {
   const button = document.getElementById("afi-refresh");
   const status = document.getElementById("afi-price-status");
+
+  if (!button || !status) return;
+  if (button.disabled) return;
 
   button.disabled = true;
   button.textContent = "Loading prices...";
 
   let updated = 0;
 
-  for (const [pair, symbol] of AFI_PAIRS) {
-    const row = [...document.querySelectorAll("#markets .market")]
-      .find(item => item.querySelector("b")?.textContent.trim() === pair);
+  try {
+    for (const [pair, symbol] of AFI_PAIRS) {
+      const row = [...document.querySelectorAll("#markets .market")]
+        .find(item =>
+          item.querySelector("b")?.textContent.trim() === pair
+        );
 
-    if (!row) continue;
+      if (!row) continue;
 
-    const display = row.querySelector("span");
-    display.textContent = "Loading...";
+      const display = row.querySelector("span");
+      if (!display) continue;
 
-    try {
-      const url = AFI_API + "?symbol=" + encodeURIComponent(symbol);
-      const response = await fetch(url, { cache: "no-store" });
-      const data = await response.json();
+      display.textContent = "Loading...";
 
-      if (!response.ok || !data.price) {
-        throw new Error(data.error || "Unavailable");
+      try {
+        const url = AFI_API + "?symbol=" +
+          encodeURIComponent(symbol);
+
+        const response = await fetch(url, {
+          cache: "no-store"
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.price) {
+          throw new Error(data.error || "Unavailable");
+        }
+
+        display.textContent = data.price;
+        updated++;
+
+      } catch (error) {
+        console.error("AFI price error:", symbol, error);
+        display.textContent = "Unavailable";
       }
-
-      display.textContent = data.price;
-      updated++;
-    } catch (error) {
-      display.textContent = "Unavailable";
     }
+
+    status.textContent =
+      updated + " of 8 instruments updated. " +
+      "Last checked: " +
+      new Date().toLocaleTimeString();
+
+  } finally {
+    button.disabled = false;
+    button.textContent = "Refresh Market Prices";
   }
-
-  status.textContent =
-    updated + " of 8 instruments updated. " +
-    "Last checked: " + new Date().toLocaleTimeString();
-
-  button.disabled = false;
-  button.textContent = "Refresh Market Prices";
 }
 
-window.addEventListener("DOMContentLoaded", function () {
+function afiInitMarketRefresh() {
   const markets = document.getElementById("markets");
 
-  if (!markets) return;
+  if (!markets) {
+    console.error("AFI markets container not found");
+    return;
+  }
+
+  if (document.getElementById("afi-refresh")) return;
 
   const button = document.createElement("button");
   button.id = "afi-refresh";
@@ -377,24 +401,33 @@ window.addEventListener("DOMContentLoaded", function () {
   const status = document.createElement("p");
   status.id = "afi-price-status";
   status.className = "muted";
-  status.textContent = "Live prices not yet requested.";
+  status.textContent = "Connecting to live market data...";
 
-markets.appendChild(button);
-markets.appendChild(status);
+  markets.appendChild(button);
+  markets.appendChild(status);
 
-// Automatically load prices when AFI opens
-afiRefreshPrices();
+  // Load prices immediately
+  afiRefreshPrices();
 
-// Refresh prices every 60 seconds
-setInterval(function () {
-  if (!button.disabled) {
-    afiRefreshPrices();
+  // Refresh every 60 seconds
+  if (afiRefreshTimer) {
+    clearInterval(afiRefreshTimer);
   }
-}, 60000);
 
-});
-  
+  afiRefreshTimer = setInterval(function () {
+    afiRefreshPrices();
+  }, 60000);
+}
 
+// Initialize safely
+if (document.readyState === "loading") {
+  document.addEventListener(
+    "DOMContentLoaded",
+    afiInitMarketRefresh
+  );
+} else {
+  afiInitMarketRefresh();
+}
 </script>
   
 </body>
