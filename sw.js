@@ -1,5 +1,5 @@
 
-const CACHE = "afi-shell-v2";
+const CACHE = "afi-shell-v3";
 
 const ASSETS = [
   "./",
