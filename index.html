@@ -308,6 +308,82 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 
+<script>
+const AFI_API = "https://afi-market-data.machariajohnwork.workers.dev/";
+
+const AFI_PAIRS = [
+  ["EURUSD", "EUR/USD"],
+  ["GBPUSD", "GBP/USD"],
+  ["USDJPY", "USD/JPY"],
+  ["USDCHF", "USD/CHF"],
+  ["AUDUSD", "AUD/USD"],
+  ["NZDUSD", "NZD/USD"],
+  ["USDCAD", "USD/CAD"],
+  ["XAUUSD", "XAU/USD"]
+];
+
+async function afiRefreshPrices() {
+  const button = document.getElementById("afi-refresh");
+  const status = document.getElementById("afi-price-status");
+
+  button.disabled = true;
+  button.textContent = "Loading prices...";
+
+  let updated = 0;
+
+  for (const [pair, symbol] of AFI_PAIRS) {
+    const row = [...document.querySelectorAll("#markets .market")]
+      .find(item => item.querySelector("b")?.textContent.trim() === pair);
+
+    if (!row) continue;
+
+    const display = row.querySelector("span");
+    display.textContent = "Loading...";
+
+    try {
+      const url = AFI_API + "?symbol=" + encodeURIComponent(symbol);
+      const response = await fetch(url, { cache: "no-store" });
+      const data = await response.json();
+
+      if (!response.ok || !data.price) {
+        throw new Error(data.error || "Unavailable");
+      }
+
+      display.textContent = data.price;
+      updated++;
+    } catch (error) {
+      display.textContent = "Unavailable";
+    }
+  }
+
+  status.textContent =
+    updated + " of 8 instruments updated. " +
+    "Last checked: " + new Date().toLocaleTimeString();
+
+  button.disabled = false;
+  button.textContent = "Refresh Market Prices";
+}
+
+window.addEventListener("DOMContentLoaded", function () {
+  const markets = document.getElementById("markets");
+
+  if (!markets) return;
+
+  const button = document.createElement("button");
+  button.id = "afi-refresh";
+  button.textContent = "Refresh Market Prices";
+  button.onclick = afiRefreshPrices;
+
+  const status = document.createElement("p");
+  status.id = "afi-price-status";
+  status.className = "muted";
+  status.textContent = "Live prices not yet requested.";
+
+  markets.appendChild(button);
+  markets.appendChild(status);
+});
+</script>
+  
 </body>
     </html>
   
