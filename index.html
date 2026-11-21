@@ -379,8 +379,22 @@ window.addEventListener("DOMContentLoaded", function () {
   status.className = "muted";
   status.textContent = "Live prices not yet requested.";
 
-  markets.appendChild(button);
-  markets.appendChild(status);
+markets.appendChild(button);
+markets.appendChild(status);
+
+// Automatically load prices when AFI opens
+afiRefreshPrices();
+
+// Refresh prices every 60 seconds
+setInterval(function () {
+  if (!button.disabled) {
+    afiRefreshPrices();
+  }
+}, 60000);
+
+});
+  
+  
 });
 </script>
   
