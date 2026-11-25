@@ -1,15 +1,12 @@
 
-/* AFI market-data bridge
-   Connects and validates historical candles.
-   BUY/SELL signals remain blocked until spread
-   and economic-calendar checks are connected.
+/* AFI Market Data Bridge
+   Rate-limited historical candle validation.
+   No BUY/SELL signals or live trades are enabled.
 */
-
 (function () {
   "use strict";
 
-  const API =
-    "https://afi-market-data.machariajohnwork.workers.dev/";
+  const API = "https://afi-market-data.machariajohnwork.workers.dev/";
 
   const PAIRS = [
     ["EURUSD", "EUR/USD"],
@@ -22,9 +19,19 @@
     ["XAUUSD", "XAU/USD"]
   ];
 
+  const sleep = ms =>
+    new Promise(resolve => setTimeout(resolve, ms));
+
+  let analysisRunning = false;
+
+  // Stop the dashboard's recurring price requests
+  // so they do not consume the candle request allowance.
+  window.afiRefreshPrices = async function () {
+    return;
+  };
+
   async function loadCandles(symbol) {
-    const url =
-      API +
+    const url = API +
       "?action=candles&symbol=" +
       encodeURIComponent(symbol) +
       "&interval=5min&outputsize=250";
@@ -36,26 +43,24 @@
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || "Market data error");
+      throw new Error(data.error || "Market data request failed");
     }
 
     if (!Array.isArray(data.candles)) {
-      throw new Error("Candle data is missing.");
+      throw new Error("Candle data is missing");
     }
 
-    const candles = data.candles.map(function (c) {
-      return {
-        time: c.datetime || c.time,
-        open: Number(c.open),
-        high: Number(c.high),
-        low: Number(c.low),
-        close: Number(c.close)
-      };
-    });
+    const candles = data.candles.map(c => ({
+      time: c.datetime || c.time,
+      open: Number(c.open),
+      high: Number(c.high),
+      low: Number(c.low),
+      close: Number(c.close)
+    }));
 
     if (candles.length < 210) {
       throw new Error(
-        "Insufficient candles: " + candles.length
+        "Only " + candles.length + " candles received; 210 required"
       );
     }
 
@@ -69,7 +74,7 @@
         c.high < c.low ||
         c.close <= 0
       ) {
-        throw new Error("Invalid candle data.");
+        throw new Error("Invalid candle data");
       }
     }
 
@@ -77,73 +82,92 @@
   }
 
   window.runAnalysis = async function () {
-    const panel = document.getElementById("analysis");
+    if (analysisRunning) return;
 
-    if (!panel) return;
+    analysisRunning = true;
+
+    const panel = document.getElementById("analysis");
+    const button = document.querySelector(
+      'button[onclick="runAnalysis()"]'
+    );
+
+    if (!panel) {
+      analysisRunning = false;
+      return;
+    }
+
+    if (button) button.disabled = true;
 
     document.getElementById("sl").textContent = "--";
     document.getElementById("tp").textContent = "--";
     document.getElementById("rr").textContent = "--";
 
-    panel.textContent =
-      "Checking historical candles for all 8 instruments...";
-
     const results = [];
 
-    for (const pair of PAIRS) {
-      try {
-        const candles = await loadCandles(pair[1]);
+    try {
+      panel.textContent =
+        "Pausing price requests. Waiting 65 seconds for the API limit to reset...";
 
-        results.push({
-          pair: pair[0],
-          success: true,
-          count: candles.length
-        });
+      await sleep(65000);
 
-      } catch (error) {
-        results.push({
-          pair: pair[0],
-          success: false,
-          error: error.message
-        });
+      for (let i = 0; i < PAIRS.length; i++) {
+        const [pair, symbol] = PAIRS[i];
+
+        panel.textContent =
+          "Checking " + pair +
+          " (" + (i + 1) + " of 8). Please wait...";
+
+        try {
+          const candles = await loadCandles(symbol);
+
+          results.push({
+            pair,
+            success: true,
+            count: candles.length
+          });
+
+        } catch (error) {
+          results.push({
+            pair,
+            success: false,
+            error: error.message
+          });
+        }
+
+        // Leave 9 seconds between API requests.
+        if (i < PAIRS.length - 1) {
+          await sleep(9000);
+        }
+
+        panel.innerHTML = results.map(r => {
+          const p = document.createElement("p");
+          p.textContent = r.success
+            ? r.pair + ": " + r.count + " candles validated"
+            : r.pair + ": ERROR: " + r.error;
+          p.style.color = r.success ? "#7cdbb2" : "#ff9b9b";
+          return p.outerHTML;
+        }).join("");
       }
+
+      const successful = results.filter(r => r.success).length;
+
+      const summary = document.createElement("p");
+      summary.className = "green";
+      summary.textContent =
+        successful + " of 8 instruments passed candle validation.";
+
+      panel.prepend(summary);
+
+      const note = document.createElement("p");
+      note.className = "muted";
+      note.textContent =
+        "This checks historical data only. BUY/SELL signals remain disabled until broker spread and economic-calendar verification are connected.";
+
+      panel.appendChild(note);
+
+    } finally {
+      analysisRunning = false;
+      if (button) button.disabled = false;
     }
-
-    const output = results.map(function (r) {
-      if (r.success) {
-        return (
-          "<p><b>" + r.pair +
-          ":</b> <span style='color:#7cdbb2'>" +
-          r.count +
-          " candles validated</span></p>"
-        );
-      }
-
-      return (
-        "<p><b>" + r.pair +
-        ":</b> <span style='color:#ff9b9b'>" +
-        "ERROR: " + r.error +
-        "</span></p>"
-      );
-    }).join("");
-
-    const allSuccessful =
-      results.every(function (r) {
-        return r.success;
-      });
-
-    panel.innerHTML =
-      "<p class='green'><b>" +
-      (allSuccessful
-        ? "Historical candle feed connected."
-        : "Candle check completed.") +
-      "</b></p>" +
-      output +
-      "<p class='muted'>" +
-      "BUY/SELL signals remain disabled until " +
-      "live broker spread and economic-calendar " +
-      "verification are connected." +
-      "</p>";
   };
-
 })();
