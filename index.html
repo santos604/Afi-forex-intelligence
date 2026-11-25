@@ -336,6 +336,7 @@ async function afiRefreshPrices() {
 
   try {
     for (const [pair, symbol] of AFI_PAIRS) {
+      if (window.AFI_ANALYSIS_RUNNING) break;
       const row = [...document.querySelectorAll("#markets .market")]
         .find(item =>
           item.querySelector("b")?.textContent.trim() === pair
@@ -407,7 +408,7 @@ function afiInitMarketRefresh() {
 
   // Load prices immediately
   afiRefreshPrices();
-
+if (window.AFI_ANALYSIS_RUNNING) return;
   // Refresh every 60 seconds
   if (afiRefreshTimer) {
     clearInterval(afiRefreshTimer);
@@ -418,15 +419,9 @@ function afiInitMarketRefresh() {
   }, 60000);
 }
 
-// Initialize safely
-if (document.readyState === "loading") {
-  document.addEventListener(
-    "DOMContentLoaded",
-    afiInitMarketRefresh
-  );
-} else {
-  afiInitMarketRefresh();
-}
+ price refresh temporarily disabled.
+// This prevents ba// Automaticckground requests from consuming API credits.
+
 </script>
 <script src="./signal-engine.js"></script>
 <script src="./afi-market-bridge.js"></script>  
