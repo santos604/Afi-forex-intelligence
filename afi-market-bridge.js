@@ -1,8 +1,5 @@
 
-/* AFI Market Data Bridge
-   Rate-limited historical candle validation.
-   No BUY/SELL signals or live trades are enabled.
-*/
+/* AFI coordinated market-data bridge */
 (function () {
   "use strict";
 
@@ -23,12 +20,6 @@
     new Promise(resolve => setTimeout(resolve, ms));
 
   let analysisRunning = false;
-
-  // Stop the dashboard's recurring price requests
-  // so they do not consume the candle request allowance.
-  window.afiRefreshPrices = async function () {
-    return;
-  };
 
   async function loadCandles(symbol) {
     const url = API +
@@ -84,17 +75,15 @@
   window.runAnalysis = async function () {
     if (analysisRunning) return;
 
-    analysisRunning = true;
-
     const panel = document.getElementById("analysis");
     const button = document.querySelector(
       'button[onclick="runAnalysis()"]'
     );
 
-    if (!panel) {
-      analysisRunning = false;
-      return;
-    }
+    if (!panel) return;
+
+    analysisRunning = true;
+    window.AFI_ANALYSIS_RUNNING = true;
 
     if (button) button.disabled = true;
 
@@ -106,7 +95,7 @@
 
     try {
       panel.textContent =
-        "Pausing price requests. Waiting 65 seconds for the API limit to reset...";
+        "Pausing price refresh and allowing the API limit to reset. Please wait 65 seconds...";
 
       await sleep(65000);
 
@@ -114,8 +103,7 @@
         const [pair, symbol] = PAIRS[i];
 
         panel.textContent =
-          "Checking " + pair +
-          " (" + (i + 1) + " of 8). Please wait...";
+          "Checking " + pair + " (" + (i + 1) + " of 8)...";
 
         try {
           const candles = await loadCandles(symbol);
@@ -134,11 +122,6 @@
           });
         }
 
-        // Leave 9 seconds between API requests.
-        if (i < PAIRS.length - 1) {
-          await sleep(9000);
-        }
-
         panel.innerHTML = results.map(r => {
           const p = document.createElement("p");
           p.textContent = r.success
@@ -147,9 +130,14 @@
           p.style.color = r.success ? "#7cdbb2" : "#ff9b9b";
           return p.outerHTML;
         }).join("");
+
+        if (i < PAIRS.length - 1) {
+          await sleep(9000);
+        }
       }
 
-      const successful = results.filter(r => r.success).length;
+      const successful =
+        results.filter(r => r.success).length;
 
       const summary = document.createElement("p");
       summary.className = "green";
@@ -161,12 +149,14 @@
       const note = document.createElement("p");
       note.className = "muted";
       note.textContent =
-        "This checks historical data only. BUY/SELL signals remain disabled until broker spread and economic-calendar verification are connected.";
+        "Historical data validation only. Trading signals and automatic execution remain disabled until all required safety checks are connected.";
 
       panel.appendChild(note);
 
     } finally {
       analysisRunning = false;
+      window.AFI_ANALYSIS_RUNNING = false;
+
       if (button) button.disabled = false;
     }
   };
